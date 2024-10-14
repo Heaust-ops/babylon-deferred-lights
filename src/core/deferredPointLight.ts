@@ -210,7 +210,7 @@ class DeferredPointLight extends AbstractDeferredLight {
             float true_py = assembleNumber(int(py.r), int(py.g), int(py.b), int(py.a));
             float true_pz = assembleNumber(int(pz.r), int(pz.g), int(pz.b), int(pz.a));
             float true_range = assembleNumber(int(range.r), int(range.g), int(range.b), int(range.a));
-        `;
+    `;
 
     const readDataFromUniforms = `
             vec4 ci = lights_color_intensity[i];
@@ -218,7 +218,7 @@ class DeferredPointLight extends AbstractDeferredLight {
             float true_py = lights_position_range[i].y;
             float true_pz = lights_position_range[i].z;
             float true_range = lights_position_range[i].w;
-        `;
+    `;
 
     // https://www.youtube.com/watch?v=gya7x9H3mV0
     // https://www.gsn-lib.org/index.html#projectName=ShadersMonthly09&graphName=MicrofacetBRDF
@@ -286,10 +286,9 @@ class DeferredPointLight extends AbstractDeferredLight {
 
                 return diff + spec;
             }
-        `;
+    `;
 
-    Effect.ShadersStore["__deferredPointLights__FragmentShader"] =
-      `precision highp float;
+    Effect.ShadersStore["__deferredPointLights__FragmentShader"] = `precision highp float;
 
         #define RECIPROCAL_PI 0.318309886
 
@@ -370,7 +369,7 @@ class DeferredPointLight extends AbstractDeferredLight {
             
             gl_FragColor = color;
         }
-        `;
+    `;
 
     this.postProcess = new PostProcess(
       "__deferredPointLights__ pp",
