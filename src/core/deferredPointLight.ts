@@ -15,6 +15,8 @@ import "@babylonjs/core/Rendering/geometryBufferRendererSceneComponent";
 import type { Scene } from "@babylonjs/core/scene";
 import type { Camera } from "@babylonjs/core/Cameras/camera";
 
+import pointLightFrag from "./shaders/pointLight/main.glsl";
+
 type DeferredPointLightParams = {
   color: Color3;
   position: Vector3;
@@ -198,178 +200,22 @@ class DeferredPointLight extends AbstractDeferredLight {
       Texture.NEAREST_NEAREST,
     );
 
-    const readDataFromTexture = `
-            float texIndex = (float(i) / ${this.TOTAL_LIGHTS_ALLOWED}.0);
-            vec4 ci = texture2D(point_lights_data, vec2(texIndex, 0.0 / ${POINTS_DATA_TEXTURE_HEIGHT}.0));
-            vec4 px = texture2D(point_lights_data, vec2(texIndex, 1.001 / ${POINTS_DATA_TEXTURE_HEIGHT}.0)) * 255.0;
-            vec4 py = texture2D(point_lights_data, vec2(texIndex, 2.001 / ${POINTS_DATA_TEXTURE_HEIGHT}.0)) * 255.0;
-            vec4 pz = texture2D(point_lights_data, vec2(texIndex, 3.001 / ${POINTS_DATA_TEXTURE_HEIGHT}.0)) * 255.0;
-            vec4 range = texture2D(point_lights_data, vec2(texIndex, 1.0)) * 255.0;
-            
-            float true_px = assembleNumber(int(px.r), int(px.g), int(px.b), int(px.a));
-            float true_py = assembleNumber(int(py.r), int(py.g), int(py.b), int(py.a));
-            float true_pz = assembleNumber(int(pz.r), int(pz.g), int(pz.b), int(pz.a));
-            float true_range = assembleNumber(int(range.r), int(range.g), int(range.b), int(range.a));
-    `;
+    let defines = "";
 
-    const readDataFromUniforms = `
-            vec4 ci = lights_color_intensity[i];
-            float true_px = lights_position_range[i].x;
-            float true_py = lights_position_range[i].y;
-            float true_pz = lights_position_range[i].z;
-            float true_range = lights_position_range[i].w;
-    `;
+    defines += `precision highp float;
+#define TOTAL_LIGHTS_ALLOWED ${this.TOTAL_LIGHTS_ALLOWED}.0
+#define POINTS_DATA_TEXTURE_HEIGHT ${POINTS_DATA_TEXTURE_HEIGHT}.0
+#define RECIPROCAL_PI 0.318309886
+`;
 
-    // https://www.youtube.com/watch?v=gya7x9H3mV0
-    // https://www.gsn-lib.org/index.html#projectName=ShadersMonthly09&graphName=MicrofacetBRDF
-    const brdf_microfacet = `
-            vec3 fresnelSchlick(float cosTheta, vec3 F0) {
-                return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
-            }
+    if (this.isPerformanceMode) defines += `#define IS_PERFORMANCE_MODE 1
+#define TOTAL_PERFORMANCE_LIGHTS_ALLOWED ${this.TOTAL_PERFORMANCE_LIGHTS_ALLOWED}
+`;
 
-            float D_GGX(float NoH, float roughness) {
-                float alpha = roughness * roughness;
-                float alpha2 = alpha * alpha;
-                float NoH2 = NoH * NoH;
-                float b = (NoH2 * (alpha2 - 1.0) + 1.0);
-                return alpha2 * RECIPROCAL_PI / (b * b);
-            }
+    const frag = defines + pointLightFrag;
+    console.log(frag);
 
-            float G1_GGX_Schlick(float NoV, float roughness) {
-                float alpha = roughness * roughness;
-                float k = alpha / 2.0;
-                return max(NoV, 0.001) / (NoV * (1.0 - k) + k);
-            }
-
-            float G_Smith(float NoV, float NoL, float roughness) {
-                return G1_GGX_Schlick(NoL, roughness) * G1_GGX_Schlick(NoV, roughness);
-            }
-
-            float fresnelSchlick90(float cosTheta, float F0, float F90) {
-                return F0 + (F90 - F0) * pow(1.0 - cosTheta, 5.0);
-            } 
-
-            float disneyDiffuseFactor(float NoV, float NoL, float VoH, float roughness) {
-                float alpha = roughness * roughness;
-                float F90 = 0.5 + 2.0 * alpha * VoH * VoH;
-                float F_in = fresnelSchlick90(NoL, 1.0, F90);
-                float F_out = fresnelSchlick90(NoV, 1.0, F90);
-                return F_in * F_out;
-            }
-
-            vec3 brdfMicrofacets(vec3 L, vec3 V, vec3 N, float metallic, float roughness, vec3 baseColor, float reflectance) {
-                vec3 H = normalize(V + L);
-                
-                float NoV = clamp(dot(N, V), 0.0, 1.0);
-                float NoL = clamp(dot(N, L), 0.0, 1.0);
-                float NoH = clamp(dot(N, H), 0.0, 1.0);
-                float VoH = clamp(dot(V, H), 0.0, 1.0);
-                
-                vec3 f0 = vec3(0.16 * (reflectance * reflectance));
-                f0 = mix(f0, baseColor, metallic);
-                
-                vec3 F = fresnelSchlick(VoH, f0);
-                float D = D_GGX(NoH, roughness);
-                float G = G_Smith(NoV, NoL, roughness);
-                
-                vec3 spec = (F * D * G) / (4.0 * max(NoV, 0.001) * max(NoL, 0.001));
-                
-                vec3 rhoD = baseColor;
-                
-                // optionally
-                rhoD *= vec3(1.0) - F;
-                rhoD *= disneyDiffuseFactor(NoV, NoL, VoH, roughness);
-                
-                rhoD *= (1.0 - metallic);
-                
-                vec3 diff = rhoD * RECIPROCAL_PI;
-
-                return diff + spec;
-            }
-    `;
-
-    Effect.ShadersStore["__deferredPointLights__FragmentShader"] = `precision highp float;
-
-        #define RECIPROCAL_PI 0.318309886
-
-        in vec2 vUV;
-        uniform int lights_len;
-        uniform vec2 screenSize;
-        uniform vec3 camera_position;
-
-        ${this.isPerformanceMode ? "" : "uniform sampler2D point_lights_data;"}
-        ${this.isPerformanceMode ? `uniform vec4 lights_position_range[${this.TOTAL_PERFORMANCE_LIGHTS_ALLOWED}];` : ""}
-        ${this.isPerformanceMode ? `uniform vec4 lights_color_intensity[${this.TOTAL_PERFORMANCE_LIGHTS_ALLOWED}];` : ""}
-
-        uniform sampler2D textureSampler;
-        uniform sampler2D nBuffer;
-        uniform sampler2D pBuffer;
-        uniform sampler2D rBuffer;
-
-        ${this.isPerformanceMode ? "" : Bits.glslNumberAssembler}
-        ${brdf_microfacet}
-
-        vec3 getColor (
-            float intensity,
-            vec3 light_p,
-            vec3 light_color,
-            float light_range,
-            vec4 color,
-            vec4 normals,
-            vec4 p0,
-            vec4 refl
-        ) {
-            vec3 d = light_p - p0.rgb;
-            float r = length(d);
-            vec3 l = d / r;
-            vec3 n = normals.rgb;
-
-            float normalFactor = pow(max(0.0, dot(n, l)), 2.0);
-            float distanceFactor = clamp(pow( intensity / r , 2.0), 0.0, 1.0);
-            float mixFactor = distanceFactor * normalFactor;
-            float rangeClampFactor = light_range == 0.0 ? 1.0 : smoothstep(light_range, light_range - 0.1, r);
-            vec3 final_standard = max(vec3(0.0), light_color * clamp(mixFactor, 0.0, 1.0)) * rangeClampFactor;
-
-            float roughness = 1.0 - refl.a;
-            float metalness = refl.b;
-            if (roughness == 0.0 && metalness == 0.0) {
-                return final_standard;
-            }
-
-            vec3 v = normalize(camera_position - p0.rgb);
-            
-            return brdfMicrofacets(l, v, normalize(n), metalness, roughness, color.rgb * light_color, 0.5) * rangeClampFactor;
-        }
-
-        void main(void) {
-            vec4 normals = texture2D(nBuffer, vUV);
-            vec4 color = texture2D(textureSampler, vUV);
-            if (normals.a == 0.0) {
-                gl_FragColor = color;
-                return;
-            }
-
-            vec4 pbuff = texture2D(pBuffer, vUV);
-            vec4 refl = texture2D(rBuffer, vUV);
-
-            for (int i = 0; i < lights_len; i++) {
-                ${this.isPerformanceMode ? readDataFromUniforms : readDataFromTexture}
-
-                color.rgb += getColor(
-                    abs(ci.a * 10.0),
-                    vec3(true_px, true_py, true_pz),
-                    normalize(ci.rgb),
-                    true_range,
-                    color,
-                    normals,
-                    pbuff,
-                    refl
-                );
-            }
-            
-            gl_FragColor = color;
-        }
-    `;
+    Effect.ShadersStore["__deferredPointLights__FragmentShader"] = frag;
 
     this.postProcess = new PostProcess(
       "__deferredPointLights__ pp",

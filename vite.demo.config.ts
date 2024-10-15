@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import glsl from 'vite-plugin-glsl';
 
 export default defineConfig({
   root: './examples',
@@ -8,4 +9,5 @@ export default defineConfig({
   server: {
     port: 5173,
   },
+  plugins: [glsl()]
 });

@@ -1,3 +1,4 @@
+import glsl from 'vite-plugin-glsl';
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
 
@@ -13,7 +14,7 @@ export default defineConfig({
       external: [],
     },
   },
-  plugins: [dts({
+  plugins: [glsl(), dts({
     outDir: 'dist/types'
   })],
 });
