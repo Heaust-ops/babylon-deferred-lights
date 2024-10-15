@@ -6,7 +6,6 @@ import { GeometryBufferRenderer } from "@babylonjs/core/Rendering/geometryBuffer
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { Constants } from "@babylonjs/core/Engines/constants";
 import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture";
-import { Effect } from "@babylonjs/core/Materials/effect";
 import { PostProcess } from "@babylonjs/core/PostProcesses/postProcess";
 
 import "@babylonjs/core/Rendering/prePassRendererSceneComponent";
@@ -129,6 +128,7 @@ class DeferredPointLight extends AbstractDeferredLight {
 
   static enable(
     scene: Scene,
+    shadersStore: { [key: string]: string },
     camera?: Camera | null,
     geometryBufferRenderer?: GeometryBufferRenderer | null,
     isPerformanceMode = false,
@@ -213,13 +213,11 @@ class DeferredPointLight extends AbstractDeferredLight {
 `;
 
     const frag = defines + pointLightFrag;
-    console.log(frag);
-
-    Effect.ShadersStore["__deferredPointLights__FragmentShader"] = frag;
+    shadersStore["deferredPointLightsFragmentShader"] = frag;
 
     this.postProcess = new PostProcess(
-      "__deferredPointLights__ pp",
-      "__deferredPointLights__",
+      "Deferred Point Lights",
+      "deferredPointLights",
       ["lights_len", "camera_position", "screenSize"].concat(
         this.isPerformanceMode
           ? ["lights_position_range", "lights_color_intensity"]

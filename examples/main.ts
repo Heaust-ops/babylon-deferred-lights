@@ -151,7 +151,7 @@ class App {
 
     DeferredPointLight.reset();
     const scene = this.createScene(engine, canvas, demo);
-    DeferredPointLight.enable(scene, null, null, false);
+    DeferredPointLight.enable(scene, BABYLON.Effect.ShadersStore, null, null, false);
 
     engine.runRenderLoop(() => {
       scene.render();
