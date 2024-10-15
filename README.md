@@ -14,6 +14,7 @@ Right now this only supports point lights, this will change.
 
 ```javascript
 import { DeferredPointLight } from "babylon-deferred-lighting";
+import { Effect } from "@babylonjs/core/Materials/effect";
 
 // ...
 
@@ -25,6 +26,7 @@ const scene = new BABYLON.Scene(engine);
 // enable the lighting system
 DeferredPointLight.enable(
   scene,
+  Effect.ShadersStore,
   /** camera, activeCamera by default */ null,
   /** GBuffer if you wanna use one */ null,
   /** performance mode */ false
