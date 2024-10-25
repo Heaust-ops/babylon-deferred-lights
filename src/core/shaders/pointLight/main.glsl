@@ -44,9 +44,16 @@ vec3 getColor (
 
     float roughness = 1.0 - refl.a;
     float metalness = refl.b;
-    if (roughness == 0.0 && metalness == 0.0) {
-        return final_standard;
-    }
+    
+    #ifdef IS_USING_GBUFFER
+        if (roughness == 0.0) {
+            return final_standard;
+        }
+    #else
+        if (roughness == 0.0 && metalness == 0.0) {
+            return final_standard;
+        }
+    #endif
 
     vec3 v = normalize(camera_position - p0.rgb);
     

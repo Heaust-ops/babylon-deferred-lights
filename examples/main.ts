@@ -1,20 +1,23 @@
 import * as BABYLON from "@babylonjs/core";
-import { DeferredPointLight } from "../src";
+const { DeferredPointLight } = (window as any).DeferredLighting;
 
-const randomize = (light: DeferredPointLight) => {
+const randomize = (light: any) => {
   const r = Math.random;
   const scale = 75;
-  light.position = new BABYLON.Vector3((r() - 0.5) * 2 * scale, (r() - 0.5) * 2 * scale, (r() - 0.5) * 2 * scale);
+  light.position = new BABYLON.Vector3(
+    (r() - 0.5) * 2 * scale,
+    (r() - 0.5) * 2 * scale,
+    (r() - 0.5) * 2 * scale,
+  );
   light.intensity = r() * r();
   light.color = new BABYLON.Color3(r(), r(), r());
-}
+};
 
 class App {
   camera: BABYLON.Camera;
   scene: BABYLON.Scene;
   engine: BABYLON.Engine;
   canvas: HTMLCanvasElement;
-
 
   private setupLight(useDefLight: boolean) {
     const position = new BABYLON.Vector3(0, 1.5, 0);
@@ -26,7 +29,7 @@ class App {
       const testLight = new DeferredPointLight({
         position,
         color,
-        intensity
+        intensity,
       });
 
       testLight.range = range;
@@ -34,8 +37,7 @@ class App {
       DeferredPointLight.add(testLight);
 
       return testLight;
-    }
-    else {
+    } else {
       const light = new BABYLON.PointLight("light", position, this.scene);
       light.diffuse = color;
       light.intensity = intensity * 10;
@@ -46,13 +48,21 @@ class App {
 
   multiCubeDemo() {
     this.camera.dispose();
-    this.camera = new BABYLON.ArcRotateCamera("camera", 0, Math.PI / 2, 10, BABYLON.Vector3.Zero(), this.scene);
+    this.camera = new BABYLON.ArcRotateCamera(
+      "camera",
+      0,
+      Math.PI / 2,
+      10,
+      BABYLON.Vector3.Zero(),
+      this.scene,
+    );
     (this.camera as BABYLON.ArcRotateCamera).setTarget(BABYLON.Vector3.Zero());
     this.camera.attachControl(this.canvas, true);
     const matPBR = new BABYLON.PBRMaterial("");
 
     const matStd = new BABYLON.StandardMaterial("");
-    matPBR.metallic = 0.2; matPBR.roughness = 0.23;
+    matPBR.metallic = 0.2;
+    matPBR.roughness = 0.23;
     for (let i = -3; i <= 3; i++) {
       for (let j = -3; j <= 3; j++) {
         const b = BABYLON.MeshBuilder.CreateBox("box", { size: 0.5 });
@@ -65,23 +75,29 @@ class App {
     const scaling = light.range ? light.range * 2 : 0;
 
     if (1) {
-      const debugOverlay = BABYLON.MeshBuilder.CreateSphere("dbov", { diameter: 1 });
+      const debugOverlay = BABYLON.MeshBuilder.CreateSphere("dbov", {
+        diameter: 1,
+      });
       debugOverlay.position.copyFrom(light.position);
       debugOverlay.scaling.setAll(scaling);
       debugOverlay.visibility = 0.3;
     }
 
     this.scene.createDefaultEnvironment();
-    this.scene.environmentIntensity = 0.14;// (debugNode as BABYLON.Scene)
+    this.scene.environmentIntensity = 0.14; // (debugNode as BABYLON.Scene)
   }
 
   makeRandomSpheres(numSpheres = 10_000) {
-    const sphere = BABYLON.MeshBuilder.CreateSphere("sphere", { diameter: 1, segments: 32 }, this.scene);
+    const sphere = BABYLON.MeshBuilder.CreateSphere(
+      "sphere",
+      { diameter: 1, segments: 32 },
+      this.scene,
+    );
 
     const getRandom = (range = 50) => {
       const r = (Math.random() - 0.5) * 2;
       return r * range + r;
-    }
+    };
 
     for (let i = 0; i < numSpheres; i++) {
       const ni = sphere.createInstance(i + "si");
@@ -95,32 +111,40 @@ class App {
     this.makeRandomSpheres(numSpheres);
     for (let i = 0; i < numLights; i++) {
       const id = DeferredPointLight.add();
-      randomize(DeferredPointLight.getById(id)! as DeferredPointLight);
+      randomize(DeferredPointLight.getById(id)!);
     }
 
     window.addEventListener("keypress", (e) => {
       if (e.key !== "r") return;
-      DeferredPointLight.getAll().forEach(l => randomize(l as DeferredPointLight));
+      DeferredPointLight.getAll().forEach((l) => randomize(l));
     });
   }
 
   followCubeDemo() {
-    const box = BABYLON.MeshBuilder.CreateBox("light-tracer-00", { size: 1 }, this.scene);
+    const box = BABYLON.MeshBuilder.CreateBox(
+      "light-tracer-00",
+      { size: 1 },
+      this.scene,
+    );
 
-    const pl = new DeferredPointLight()
+    const pl = new DeferredPointLight();
     DeferredPointLight.add(pl);
 
     this.scene.onBeforeRenderObservable.add(() => {
       box.position.x = 3 * Math.sin(Date.now() / 1e3);
       box.position.z = 3 * Math.cos(Date.now() / 1e3);
       pl.position = box.position.clone();
-      pl.position.y += 1.001
-    })
+      pl.position.y += 1.001;
+    });
   }
 
   createScene(engine: BABYLON.Engine, canvas: HTMLCanvasElement, demo: number) {
     const scene = new BABYLON.Scene(engine);
-    const camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 5, -10), scene);
+    const camera = new BABYLON.FreeCamera(
+      "camera1",
+      new BABYLON.Vector3(0, 5, -10),
+      scene,
+    );
 
     this.camera = camera;
     this.scene = scene;
@@ -151,7 +175,13 @@ class App {
 
     DeferredPointLight.reset();
     const scene = this.createScene(engine, canvas, demo);
-    DeferredPointLight.enable(scene, BABYLON.Effect.ShadersStore, null, null, false);
+    DeferredPointLight.enable(
+      scene,
+      BABYLON.Effect.ShadersStore,
+      null,
+      null,
+      false,
+    );
 
     engine.runRenderLoop(() => {
       scene.render();

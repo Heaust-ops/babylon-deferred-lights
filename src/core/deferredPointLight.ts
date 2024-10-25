@@ -1,7 +1,5 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { AbstractDeferredLight } from "./abstractDeferredLight";
 import { Color3 } from "@babylonjs/core/Maths/math.color";
-import { Bits } from "./bits";
 import { GeometryBufferRenderer } from "@babylonjs/core/Rendering/geometryBufferRenderer";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { Constants } from "@babylonjs/core/Engines/constants";
@@ -15,6 +13,8 @@ import type { Scene } from "@babylonjs/core/scene";
 import type { Camera } from "@babylonjs/core/Cameras/camera";
 
 import pointLightFrag from "./shaders/pointLight/main.glsl";
+import { Bits } from "./bits";
+import { AbstractDeferredLight } from "./abstractDeferredLight";
 
 type DeferredPointLightParams = {
   color: Color3;
@@ -152,15 +152,21 @@ class DeferredPointLight extends AbstractDeferredLight {
       const gBuffer = geometryBufferRenderer.getGBuffer();
 
       getGTextures = () => {
-        const nIdx = geometryBufferRenderer.getTextureIndex(GeometryBufferRenderer.NORMAL_TEXTURE_TYPE);
-        const pIdx = geometryBufferRenderer.getTextureIndex(GeometryBufferRenderer.POSITION_TEXTURE_TYPE);
-        const rIdx = geometryBufferRenderer.getTextureIndex(GeometryBufferRenderer.REFLECTIVITY_TEXTURE_TYPE);
+        const nIdx = geometryBufferRenderer.getTextureIndex(
+          GeometryBufferRenderer.NORMAL_TEXTURE_TYPE,
+        );
+        const pIdx = geometryBufferRenderer.getTextureIndex(
+          GeometryBufferRenderer.POSITION_TEXTURE_TYPE,
+        );
+        const rIdx = geometryBufferRenderer.getTextureIndex(
+          GeometryBufferRenderer.REFLECTIVITY_TEXTURE_TYPE,
+        );
         return [
           gBuffer.textures[nIdx],
           gBuffer.textures[pIdx],
           gBuffer.textures[rIdx],
-        ]
-      }
+        ];
+      };
     } else {
       const prePassRenderer = scene.enablePrePassRenderer();
       if (!prePassRenderer) {
@@ -208,8 +214,14 @@ class DeferredPointLight extends AbstractDeferredLight {
 #define RECIPROCAL_PI 0.318309886
 `;
 
-    if (this.isPerformanceMode) defines += `#define IS_PERFORMANCE_MODE 1
+    if (this.isPerformanceMode)
+      defines += `#define IS_PERFORMANCE_MODE 1
 #define TOTAL_PERFORMANCE_LIGHTS_ALLOWED ${this.TOTAL_PERFORMANCE_LIGHTS_ALLOWED}
+`;
+
+    if (isUsingGeometryBufferRenderer)
+      defines += `
+#define IS_USING_GBUFFER 1
 `;
 
     const frag = defines + pointLightFrag;
