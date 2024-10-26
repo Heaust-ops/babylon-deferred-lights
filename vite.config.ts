@@ -27,20 +27,26 @@ export default defineConfig({
       ],
       output: {
         globals: {
-          "@babylonjs/core/Maths/math.vector": "BABYLON.Vector3",
-          "@babylonjs/core/Maths/math.color": "BABYLON.Color3",
-          "@babylonjs/core/Rendering/geometryBufferRenderer":
-            "BABYLON.GeometryBufferRenderer",
-          "@babylonjs/core/Materials/Textures/texture": "BABYLON.Texture",
-          "@babylonjs/core/Engines/constants": "BABYLON.Constants",
-          "@babylonjs/core/Materials/Textures/rawTexture": "BABYLON.RawTexture",
-          "@babylonjs/core/PostProcesses/postProcess": "BABYLON.PostProcess",
+          "@babylonjs/core": "BABYLON",
+          // All specific imports will fall under the BABYLON namespace
+          "@babylonjs/core/Maths/math.vector": "BABYLON",
+          "@babylonjs/core/Maths/math.color": "BABYLON",
+          "@babylonjs/core/Rendering/geometryBufferRenderer": "BABYLON",
+          "@babylonjs/core/Materials/Textures/texture": "BABYLON",
+          "@babylonjs/core/Engines/constants": "BABYLON",
+          "@babylonjs/core/Materials/Textures/rawTexture": "BABYLON",
+          "@babylonjs/core/PostProcesses/postProcess": "BABYLON",
+          "@babylonjs/core/Rendering/prePassRendererSceneComponent": "BABYLON",
+          "@babylonjs/core/Rendering/geometryBufferRendererSceneComponent":
+            "BABYLON",
+          "@babylonjs/core/scene": "BABYLON",
+          "@babylonjs/core/Cameras/camera": "BABYLON",
         },
       },
     },
   },
   plugins: [
-    glsl(),
+    glsl({ compress: true }),
     dts({
       outDir: "dist/types",
     }),

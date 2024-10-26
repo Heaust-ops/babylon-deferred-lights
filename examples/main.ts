@@ -1,5 +1,5 @@
 import * as BABYLON from "@babylonjs/core";
-const { DeferredPointLight } = (window as any).DeferredLighting;
+import { DeferredPointLight } from "../src";
 
 const randomize = (light: any) => {
   const r = Math.random;
