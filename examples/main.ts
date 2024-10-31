@@ -13,6 +13,8 @@ const randomize = (light: any) => {
   light.color = new BABYLON.Color3(r(), r(), r());
 };
 
+(window as any).BABYLON = BABYLON;
+
 class App {
   camera: BABYLON.Camera;
   scene: BABYLON.Scene;
