@@ -27,7 +27,7 @@ const scene = new BABYLON.Scene(engine);
 DeferredPointLight.enable(
   scene,
   Effect.ShadersStore,
-  /** camera, activeCamera by default */ null,
+  /** camera */ scene.activeCamera,
   /** GBuffer if you wanna use one */ null,
   /** performance mode */ false
 );
@@ -38,6 +38,22 @@ Start by importing the deferred point light.
 Reset the lighting system before you make your scene and enable it.
 
 if you plan to use fewer than about 150 lights, performance mode will be fare better on low spec devices. Otherwise keep it turned off.
+
+```javascript
+const pp = DeferredPointLight.postprocess;
+```
+
+You can get the postprocess that is doing all the lighting calclulations.
+
+```javascript
+// Just enable the system w/o using it
+DeferredPointLight.enable(scene, Effect.ShadersStore);
+
+// Use it later w/ whatever camera
+camera.attachPostProcess(DeferredPointLight.postProcess);
+```
+
+That means you can just enable the lighting system, and use the postprocess later however you wish.
 
 ```javascript
 const light = new DeferredPointLight({  // All these are optional, you don't even need to pass in an object.
@@ -107,12 +123,6 @@ DeferredPointLight.TOTAL_PERFORMANCE_LIGHTS_ALLOWED = 200; // default: 128
 You can decide the max cap for lights in normal and performance mode _(don't go too high on performance mode)_
 
 The cap is evaluated after frustum culling, so it's the maximum cap of simultaneous lights on screen.
-
-```javascript
-const pp = DeferredPointLight.postprocess;
-```
-
-You can get the postprocess that is doing all the lighting calclulations.
 
 ```javascript
 DeferredPointLight.disable();
