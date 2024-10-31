@@ -140,6 +140,8 @@ class App {
 
   createScene(engine: BABYLON.Engine, canvas: HTMLCanvasElement, demo: number) {
     const scene = new BABYLON.Scene(engine);
+    (window as any).scene = scene;
+
     const camera = new BABYLON.FreeCamera(
       "camera1",
       new BABYLON.Vector3(0, 5, -10),
@@ -182,6 +184,7 @@ class App {
       null,
       false,
     );
+    (window as any).deferredPointLight = DeferredPointLight;
 
     engine.runRenderLoop(() => {
       scene.render();

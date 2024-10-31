@@ -5,6 +5,7 @@ import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { Constants } from "@babylonjs/core/Engines/constants";
 import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture";
 import { PostProcess } from "@babylonjs/core/PostProcesses/postProcess";
+import { Frustum } from "@babylonjs/core/Maths/math.frustum";
 
 import "@babylonjs/core/Rendering/prePassRendererSceneComponent";
 import "@babylonjs/core/Rendering/geometryBufferRendererSceneComponent";
@@ -137,11 +138,6 @@ class DeferredPointLight extends AbstractDeferredLight {
 
     const isUsingGeometryBufferRenderer = !!geometryBufferRenderer;
 
-    camera = camera ?? scene.activeCamera;
-    if (!camera) throw new Error("No Camera Found");
-
-    this.attachedCamera = camera;
-
     let getGTextures: () => Texture[];
 
     if (isUsingGeometryBufferRenderer) {
@@ -227,7 +223,7 @@ class DeferredPointLight extends AbstractDeferredLight {
     const frag = defines + pointLightFrag;
     shadersStore["deferredPointLightsFragmentShader"] = frag;
 
-    this.postProcess = new PostProcess(
+    const postProcess = new PostProcess(
       "Deferred Point Lights",
       "deferredPointLights",
       ["lights_len", "camera_position", "screenSize"].concat(
@@ -239,10 +235,11 @@ class DeferredPointLight extends AbstractDeferredLight {
         this.isPerformanceMode ? [] : ["point_lights_data"],
       ),
       1,
-      camera,
+      camera ?? null,
       undefined,
       scene.getEngine(),
     );
+    this.postProcess = postProcess;
 
     if (!isUsingGeometryBufferRenderer) {
       this.postProcess._prePassEffectConfiguration = {
@@ -256,9 +253,19 @@ class DeferredPointLight extends AbstractDeferredLight {
       };
     }
 
-    this.postProcess.onApply = (e) => {
-      this.updateActive(scene.frustumPlanes);
-      const cameraPos = camera.globalPosition;
+    postProcess.onActivateObservable.add((camera) => {
+      this.attachedCamera = camera;
+    });
+
+    postProcess.onApply = (e) => {
+      if (!this.attachedCamera) return;
+
+      const transformMatrix = this.attachedCamera.getTransformationMatrix();
+      const frustum = Frustum.GetPlanes(transformMatrix);
+
+      this.updateActive(frustum);
+
+      const cameraPos = this.attachedCamera.globalPosition;
       const allLights = this.getAll({
         active: true,
         visible: true,

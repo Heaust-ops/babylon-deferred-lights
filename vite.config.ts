@@ -24,6 +24,7 @@ export default defineConfig({
         "@babylonjs/core/Rendering/geometryBufferRendererSceneComponent",
         "@babylonjs/core/scene",
         "@babylonjs/core/Cameras/camera",
+        "@babylonjs/core/Maths/math.frustum",
       ],
       output: {
         globals: {
@@ -41,6 +42,7 @@ export default defineConfig({
             "BABYLON",
           "@babylonjs/core/scene": "BABYLON",
           "@babylonjs/core/Cameras/camera": "BABYLON",
+          "@babylonjs/core/Maths/math.frustum": "BABYLON",
         },
       },
     },

@@ -140,7 +140,6 @@ class AbstractDeferredLight {
 
   static disable() {
     if (!this.attachedCamera || !this.postProcess) return;
-    this.attachedCamera.detachPostProcess(this.postProcess);
     this.postProcess.dispose();
     this.postProcess = null;
     this.attachedCamera = null;
