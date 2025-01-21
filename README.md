@@ -29,7 +29,7 @@ DeferredPointLight.enable(
   Effect.ShadersStore,
   /** camera */ scene.activeCamera,
   /** GBuffer if you wanna use one */ null,
-  /** performance mode */ false
+  /** performance mode */ false,
 );
 ```
 
@@ -56,11 +56,12 @@ camera.attachPostProcess(DeferredPointLight.postProcess);
 That means you can just enable the lighting system, and use the postprocess later however you wish.
 
 ```javascript
-const light = new DeferredPointLight({  // All these are optional, you don't even need to pass in an object.
-  position: BABYLON.Vector3.Zero(),    // position of the light
-  color: BABYLON.Color3.Red(),        // color of the light 
-  intensity: 0.2,                    // intensity of the light
-  range: 2,                         // range of the light (beyond this, the light won't be visible, 0 means infinite range)
+const light = new DeferredPointLight({
+  // All these are optional, you don't even need to pass in an object.
+  position: BABYLON.Vector3.Zero(), // position of the light
+  color: BABYLON.Color3.Red(), // color of the light
+  intensity: 0.2, // intensity of the light
+  range: 2, // range of the light (beyond this, the light won't be visible, 0 means infinite range)
 });
 
 // set params after the light is made
@@ -70,7 +71,7 @@ light.intensity = 0.5;
 light.range = 10;
 
 light.isVisible = false; // make light invisible
-light.alwaysSelectAsActiveLight = true // turns off frustum culling for this light and always tries to render it
+light.alwaysSelectAsActiveLight = true; // turns off frustum culling for this light and always tries to render it
 ```
 
 You can make a light like so and control the parameters as you see fit.
@@ -94,7 +95,10 @@ const newLight = DeferredPointLight.getById(uniqueId);
 const allLights = DeferredPointLight.getAll();
 
 // get all visible and active lights
-const allVisibleActiveLights = DeferredPointLight.getAll({ active: true, visible: true });
+const allVisibleActiveLights = DeferredPointLight.getAll({
+  active: true,
+  visible: true,
+});
 
 // remove the lights
 DeferredPointLight.remove(uniqueId); // by id
@@ -113,6 +117,7 @@ once you're done w/ a light, go ahead and remove it from the system.
 DeferredPointLight.freezeActive(); // disable frustum culling
 DeferredPointLight.unfreezeActive(); // enable frustum culling
 ```
+
 You can enable and disable frustum culling _(cpu filtering out lights that are off screen)_ if you need it.
 
 ```javascript
@@ -123,6 +128,8 @@ DeferredPointLight.TOTAL_PERFORMANCE_LIGHTS_ALLOWED = 200; // default: 128
 You can decide the max cap for lights in normal and performance mode _(don't go too high on performance mode)_
 
 The cap is evaluated after frustum culling, so it's the maximum cap of simultaneous lights on screen.
+
+You must do this before you enable the lighting system.
 
 ```javascript
 DeferredPointLight.disable();

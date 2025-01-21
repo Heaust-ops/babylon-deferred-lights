@@ -179,14 +179,16 @@ class App {
 
     DeferredPointLight.reset();
     const scene = this.createScene(engine, canvas, demo);
+    DeferredPointLight.TOTAL_LIGHTS_ALLOWED = 1024 * 50;
     DeferredPointLight.enable(
       scene,
       BABYLON.Effect.ShadersStore,
-      null,
+      scene.activeCamera,
       null,
       false,
     );
     (window as any).deferredPointLight = DeferredPointLight;
+    (window as any).scene = scene;
 
     engine.runRenderLoop(() => {
       scene.render();

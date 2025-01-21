@@ -70,7 +70,7 @@ class AbstractDeferredLight {
 
   protected static isPerformanceMode = false;
 
-  static TOTAL_LIGHTS_ALLOWED = 1024 * 10;
+  static TOTAL_LIGHTS_ALLOWED = 1024;
   static TOTAL_PERFORMANCE_LIGHTS_ALLOWED = 128;
 
   /**

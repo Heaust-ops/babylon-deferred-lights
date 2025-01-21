@@ -6,6 +6,7 @@ import { Constants } from "@babylonjs/core/Engines/constants";
 import { RawTexture } from "@babylonjs/core/Materials/Textures/rawTexture";
 import { PostProcess } from "@babylonjs/core/PostProcesses/postProcess";
 import { Frustum } from "@babylonjs/core/Maths/math.frustum";
+import { Engine } from "@babylonjs/core/Engines/engine";
 
 import "@babylonjs/core/Rendering/prePassRendererSceneComponent";
 import "@babylonjs/core/Rendering/geometryBufferRendererSceneComponent";
@@ -15,7 +16,6 @@ import type { Camera } from "@babylonjs/core/Cameras/camera";
 
 import pointLightFrag from "./shaders/pointLight/main.glsl";
 import { AbstractDeferredLight } from "./abstractDeferredLight";
-import { Engine } from "@babylonjs/core/Engines/engine";
 
 type DeferredPointLightParams = {
   color: Color3;
@@ -177,6 +177,8 @@ class DeferredPointLight extends AbstractDeferredLight {
       Texture.NEAREST_SAMPLINGMODE,
       Engine.TEXTURETYPE_FLOAT,
     );
+
+    (window as any).pl = pointLightsDataTexture;
 
     let defines = "";
 

@@ -25,6 +25,7 @@ export default defineConfig({
         "@babylonjs/core/scene",
         "@babylonjs/core/Cameras/camera",
         "@babylonjs/core/Maths/math.frustum",
+        "@babylonjs/core/Engines/engine",
       ],
       output: {
         globals: {
@@ -43,6 +44,7 @@ export default defineConfig({
           "@babylonjs/core/scene": "BABYLON",
           "@babylonjs/core/Cameras/camera": "BABYLON",
           "@babylonjs/core/Maths/math.frustum": "BABYLON",
+          "@babylonjs/core/Engines/engine": "BABYLON",
         },
       },
     },

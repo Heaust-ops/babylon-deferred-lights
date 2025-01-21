@@ -73,9 +73,9 @@ void main(void) {
 
         color.rgb += getColor(
             abs(ci.a * 10.0),
-            vec3(true_px, true_py, true_pz),
+            pr.xyz,
             normalize(ci.rgb),
-            true_range,
+            pr.w,
             color,
             normals,
             pbuff,
