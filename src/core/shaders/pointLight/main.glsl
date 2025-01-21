@@ -11,7 +11,6 @@ uniform vec3 camera_position;
   uniform vec4 lights_color_intensity[TOTAL_PERFORMANCE_LIGHTS_ALLOWED];
 #else
   uniform sampler2D point_lights_data;
-  #include ../numberAssembler;
 #endif
 
 uniform sampler2D textureSampler;

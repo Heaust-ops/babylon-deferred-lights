@@ -14,8 +14,8 @@ import type { Scene } from "@babylonjs/core/scene";
 import type { Camera } from "@babylonjs/core/Cameras/camera";
 
 import pointLightFrag from "./shaders/pointLight/main.glsl";
-import { Bits } from "./bits";
 import { AbstractDeferredLight } from "./abstractDeferredLight";
+import { Engine } from "@babylonjs/core/Engines/engine";
 
 type DeferredPointLightParams = {
   color: Color3;
@@ -28,6 +28,7 @@ class DeferredPointLight extends AbstractDeferredLight {
   color = new Color3(0, 1, 1);
   position = new Vector3(1, 0, 0);
   intensity = 0.05;
+  static MAX_TEXTURE_SIZE: number;
 
   override clone() {
     const newLight = new DeferredPointLight({
@@ -63,64 +64,33 @@ class DeferredPointLight extends AbstractDeferredLight {
    * DATA BUFFERS
    */
 
-  private getPositionArray(isSplit = true) {
-    if (isSplit) {
-      return [
-        Bits.splitNumber(this.position.x),
-        Bits.splitNumber(this.position.y),
-        Bits.splitNumber(this.position.z),
-        Bits.splitNumber(this.range),
-      ];
-    }
+  private getPositionArray() {
     return [this.position.x, this.position.y, this.position.z, this.range];
   }
 
-  private getColorIntensityArray(isTextureScaled = true) {
-    const scale = isTextureScaled ? 255 : 1;
-    return [
-      this.color.r * scale,
-      this.color.g * scale,
-      this.color.b * scale,
-      this.intensity * scale,
-    ];
+  private getColorIntensityArray() {
+    return [this.color.r, this.color.g, this.color.b, this.intensity];
   }
 
   private static getDataBuffer(lights: DeferredPointLight[]) {
-    const paddingArray = new Array(
-      (this.TOTAL_LIGHTS_ALLOWED - lights.length) * 4,
-    ).fill(1);
-
-    const newCI = [];
-    const posBufferX = [] as number[];
-    const posBufferY = [] as number[];
-    const posBufferZ = [] as number[];
-    const rangeBuffer = [] as number[];
+    const buffer = [];
 
     for (const l of lights) {
       const ci = l.getColorIntensityArray();
-      const p = l.getPositionArray() as number[][];
+      const p = l.getPositionArray();
 
-      for (let i = 0; i < 4; i++) {
-        newCI.push(ci[i]);
-        posBufferX.push(p[0][i]);
-        posBufferY.push(p[1][i]);
-        posBufferZ.push(p[2][i]);
-        rangeBuffer.push(p[3][i]);
-      }
+      buffer.push(...ci, ...p);
     }
 
-    const pixelBuffer = newCI
-      .concat(paddingArray)
-      .concat(posBufferX)
-      .concat(paddingArray)
-      .concat(posBufferY)
-      .concat(paddingArray)
-      .concat(posBufferZ)
-      .concat(paddingArray)
-      .concat(rangeBuffer)
-      .concat(paddingArray);
+    const { width, height } = DeferredPointLight.getTextureDimensionsByUnits(
+      this.MAX_TEXTURE_SIZE,
+      this.TOTAL_LIGHTS_ALLOWED,
+      8,
+    );
+    const pixelCapacity = width * height;
+    const padding = DeferredPointLight.getPadding(buffer.length, pixelCapacity);
 
-    return new Uint8Array(pixelBuffer);
+    return new Float32Array(buffer.concat(padding));
   }
 
   /**
@@ -134,6 +104,7 @@ class DeferredPointLight extends AbstractDeferredLight {
     geometryBufferRenderer?: GeometryBufferRenderer | null,
     isPerformanceMode = false,
   ) {
+    this.MAX_TEXTURE_SIZE = scene.getEngine().getCaps().maxTextureSize;
     this.isPerformanceMode = isPerformanceMode;
 
     const isUsingGeometryBufferRenderer = !!geometryBufferRenderer;
@@ -190,23 +161,29 @@ class DeferredPointLight extends AbstractDeferredLight {
       };
     }
 
-    const POINTS_DATA_TEXTURE_HEIGHT = 5;
+    const { width, height } = DeferredPointLight.getTextureDimensionsByUnits(
+      this.MAX_TEXTURE_SIZE,
+      this.TOTAL_LIGHTS_ALLOWED,
+      8,
+    );
 
     const pointLightsDataTexture = RawTexture.CreateRGBATexture(
       this.getDataBuffer([]),
-      this.TOTAL_LIGHTS_ALLOWED,
-      POINTS_DATA_TEXTURE_HEIGHT,
+      width,
+      height,
       scene,
       false,
-      undefined,
-      Texture.NEAREST_NEAREST,
+      false,
+      Texture.NEAREST_SAMPLINGMODE,
+      Engine.TEXTURETYPE_FLOAT,
     );
 
     let defines = "";
 
     defines += `precision highp float;
 #define TOTAL_LIGHTS_ALLOWED ${this.TOTAL_LIGHTS_ALLOWED}.0
-#define POINTS_DATA_TEXTURE_HEIGHT ${POINTS_DATA_TEXTURE_HEIGHT}.0
+#define POINTS_DATA_TEXTURE_WIDTH ${width}.0
+#define POINTS_DATA_TEXTURE_HEIGHT ${height}.0
 #define RECIPROCAL_PI 0.318309886
 `;
 
@@ -272,8 +249,9 @@ class DeferredPointLight extends AbstractDeferredLight {
         capLength: true,
       }) as DeferredPointLight[];
 
-      if (!this.isPerformanceMode)
+      if (!this.isPerformanceMode) {
         pointLightsDataTexture.update(this.getDataBuffer(allLights));
+      }
 
       const gTextures = getGTextures();
 
@@ -285,14 +263,12 @@ class DeferredPointLight extends AbstractDeferredLight {
         e.setFloatArray4(
           "lights_position_range",
           allLights
-            .map((l) => l.getPositionArray(false))
+            .map((l) => l.getPositionArray())
             .flatMap((a) => a as number[]),
         );
         e.setFloatArray4(
           "lights_color_intensity",
-          allLights
-            .map((l) => l.getColorIntensityArray(false))
-            .flatMap((a) => a),
+          allLights.map((l) => l.getColorIntensityArray()).flatMap((a) => a),
         );
       } else {
         e.setTexture("point_lights_data", pointLightsDataTexture);

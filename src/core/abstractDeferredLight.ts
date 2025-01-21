@@ -3,6 +3,7 @@ import type { Plane } from "@babylonjs/core/Maths/math.plane";
 import type { PostProcess } from "@babylonjs/core/PostProcesses/postProcess";
 import type { DeepImmutable } from "@babylonjs/core/types";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Engine } from "@babylonjs/core/Engines/engine";
 
 class AbstractDeferredLight {
   uniqueId: number;
@@ -23,6 +24,36 @@ class AbstractDeferredLight {
 
   /**
    * ==== ==== ==== ====
+   * UTILS
+   * ==== ==== ==== ====
+   */
+
+  protected static getPadding(bufferLength: number, pixelCapacity: number) {
+    const valueCapacity = pixelCapacity * 4;
+    const padding = new Array(valueCapacity - bufferLength).fill(0);
+    return padding;
+  }
+
+  /**
+   * RTT Dimensions depending on the max data that populates it
+   */
+  protected static getTextureDimensionsByUnits(
+    maxTexSize: number,
+    units: number,
+    sizePerUnit: number,
+  ) {
+    const pixels = Math.ceil((units * sizePerUnit) / 4);
+
+    let width = maxTexSize;
+    let height = Math.ceil(pixels / maxTexSize);
+
+    if (pixels < width) width = pixels;
+
+    return { width, height };
+  }
+
+  /**
+   * ==== ==== ==== ====
    * MANAGEMENT STUFF
    * ==== ==== ==== ====
    */
@@ -39,7 +70,7 @@ class AbstractDeferredLight {
 
   protected static isPerformanceMode = false;
 
-  static TOTAL_LIGHTS_ALLOWED = 1024;
+  static TOTAL_LIGHTS_ALLOWED = 1024 * 10;
   static TOTAL_PERFORMANCE_LIGHTS_ALLOWED = 128;
 
   /**
