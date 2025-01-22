@@ -166,20 +166,17 @@ class AbstractDeferredLight {
    * POSTPROCESS STUFF
    */
 
-  protected static attachedCamera = null as Camera | null;
   static postProcess = null as PostProcess | null;
 
   static disable() {
-    if (!this.attachedCamera || !this.postProcess) return;
+    if (!this.postProcess) return;
     this.postProcess.dispose();
     this.postProcess = null;
-    this.attachedCamera = null;
   }
 
   static reset() {
     if (this.postProcess) this.postProcess.dispose();
     this.postProcess = null;
-    this.attachedCamera = null;
     this.isFrustumCullingEnabled = true;
     this.activeLights = [];
     this.lights = {};
