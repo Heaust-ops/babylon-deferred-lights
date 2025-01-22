@@ -233,14 +233,15 @@ class DeferredPointLight extends AbstractDeferredLight {
     }
 
     postProcess.onApply = (e) => {
-      const camera = postProcess.getCamera();
+      const attachedCamera = postProcess.getCamera();
+      if (!attachedCamera) return;
 
-      const transformMatrix = camera.getTransformationMatrix();
+      const transformMatrix = attachedCamera.getTransformationMatrix();
       const frustum = Frustum.GetPlanes(transformMatrix);
 
       this.updateActive(frustum);
 
-      const cameraPos = camera.globalPosition;
+      const cameraPos = attachedCamera.globalPosition;
       const allLights = this.getAll({
         active: true,
         visible: true,
