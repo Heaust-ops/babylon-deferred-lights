@@ -302,6 +302,7 @@ class DeferredPointLight extends AbstractDeferredLight {
 
       if (!this.isPerformanceMode && this.needsUpdate) {
         pointLightsDataTexture.update(this.getDataBuffer(allLights));
+        this.needsUpdate = false;
       }
 
       const gTextures = getGTextures();
@@ -333,6 +334,8 @@ class DeferredPointLight extends AbstractDeferredLight {
         this.postProcess!.height,
       );
     };
+
+    return postProcess;
   }
 }
 
