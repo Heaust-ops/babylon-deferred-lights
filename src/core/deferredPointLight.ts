@@ -13,6 +13,7 @@ import "@babylonjs/core/Rendering/geometryBufferRendererSceneComponent";
 
 import type { Scene } from "@babylonjs/core/scene";
 import type { Camera } from "@babylonjs/core/Cameras/camera";
+import type { PostProcessOptions } from "@babylonjs/core/PostProcesses/postProcess";
 
 import pointLightFrag from "./shaders/pointLight/main.glsl";
 import { AbstractDeferredLight } from "./abstractDeferredLight";
@@ -143,6 +144,7 @@ class DeferredPointLight extends AbstractDeferredLight {
     camera?: Camera | null,
     geometryBufferRenderer?: GeometryBufferRenderer | null,
     isPerformanceMode = false,
+    postProcessOptions: number | PostProcessOptions = 1,
   ) {
     this.MAX_TEXTURE_SIZE = scene.getEngine().getCaps().maxTextureSize;
     this.isPerformanceMode = isPerformanceMode;
@@ -253,7 +255,7 @@ class DeferredPointLight extends AbstractDeferredLight {
       ["nBuffer", "pBuffer", "rBuffer"].concat(
         this.isPerformanceMode ? [] : ["point_lights_data"],
       ),
-      1,
+      postProcessOptions,
       camera ?? null,
       undefined,
       scene.getEngine(),

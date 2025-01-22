@@ -152,7 +152,9 @@ class AbstractDeferredLight {
     const allLights = filters.active
       ? this.activeLights
       : Object.values(this.lights);
+
     const filteredLights = [];
+
     const totalAllowed = this.isPerformanceMode
       ? this.TOTAL_PERFORMANCE_LIGHTS_ALLOWED
       : this.TOTAL_LIGHTS_ALLOWED;
