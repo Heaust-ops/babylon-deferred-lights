@@ -11,8 +11,16 @@ class AbstractDeferredLight {
   alwaysSelectAsActiveLight = false;
   isVisible = true;
 
-  range = 20;
-  position = Vector3.Zero();
+  protected _range = 20;
+  protected _position = Vector3.Zero();
+
+  get range() {
+    return this._range;
+  }
+
+  get position() {
+    return this._position;
+  }
 
   clone() {
     throw new Error("Method not implemented");
@@ -27,11 +35,13 @@ class AbstractDeferredLight {
    * UTILS
    * ==== ==== ==== ====
    */
-
-  protected static getPadding(bufferLength: number, pixelCapacity: number) {
+  protected static getPaddingLength(
+    bufferLength: number,
+    pixelCapacity: number,
+  ) {
     const valueCapacity = pixelCapacity * 4;
-    const padding = new Array(valueCapacity - bufferLength).fill(0);
-    return padding;
+    const l = valueCapacity - bufferLength;
+    return l;
   }
 
   /**
@@ -76,6 +86,19 @@ class AbstractDeferredLight {
   /**
    * LIGHT SPECIFIC STUFF
    */
+  private static _needsUpdate = false;
+  static get needsUpdate() {
+    return this.autoUpdate || this._needsUpdate;
+  }
+  static set needsUpdate(arg: boolean) {
+    this._needsUpdate = arg;
+  }
+
+  static update() {
+    this.needsUpdate = true;
+  }
+
+  static autoUpdate = true;
 
   protected static lights = {} as Record<number, AbstractDeferredLight>;
 
@@ -149,6 +172,8 @@ class AbstractDeferredLight {
   }
 
   static remove(idOrLight: number | AbstractDeferredLight) {
+    this.needsUpdate = true;
+
     if (idOrLight instanceof AbstractDeferredLight) {
       delete this.lights[idOrLight.uniqueId];
       return;
@@ -158,6 +183,8 @@ class AbstractDeferredLight {
   }
 
   static add(light: AbstractDeferredLight) {
+    this.needsUpdate = true;
+
     this.lights[light.uniqueId] = light;
     return light.uniqueId;
   }
@@ -174,15 +201,19 @@ class AbstractDeferredLight {
     this.postProcess = null;
   }
 
+  static previousPadding: number[] | null = null;
   static reset() {
     if (this.postProcess) this.postProcess.dispose();
     this.postProcess = null;
     this.isFrustumCullingEnabled = true;
     this.activeLights = [];
+    this.needsUpdate = false;
     this.lights = {};
+    this.previousPadding = null;
     this.isPerformanceMode = false;
     this.TOTAL_LIGHTS_ALLOWED = 1024;
     this.TOTAL_PERFORMANCE_LIGHTS_ALLOWED = 128;
+    this.autoUpdate = true;
   }
 }
 

@@ -48,6 +48,102 @@ class App {
     }
   }
 
+  multiViewPortDemo() {
+    this.camera.dispose();
+
+    this.camera = new BABYLON.ArcRotateCamera(
+      "camera1",
+      Math.PI / 2,
+      Math.PI / 2,
+      10,
+      new BABYLON.Vector3(-2, 2, 0),
+      this.scene,
+    );
+    this.camera.attachControl(this.canvas, true);
+
+    const camera2 = new BABYLON.ArcRotateCamera(
+      "camera2",
+      0,
+      0,
+      10,
+      new BABYLON.Vector3(0, 2, 0),
+      this.scene,
+    );
+    camera2.position = new BABYLON.Vector3(0, 10, 0);
+    camera2.target = new BABYLON.Vector3(0, 0, 0);
+
+    (window as any).c1 = this.camera;
+    (window as any).c2 = camera2;
+
+    this.camera.onDisposeObservable.add(() => {
+      camera2.dispose();
+    });
+
+    this.camera.viewport = new BABYLON.Viewport(0, 0, 1, 1);
+    camera2.viewport = new BABYLON.Viewport(0, 0.5, 1, 1);
+
+    if (this.scene.activeCameras)
+      this.scene.activeCameras.push(this.camera, camera2);
+    else {
+      console.log("heh?");
+    }
+
+    const matPBR = new BABYLON.PBRMaterial("");
+
+    const matStd = new BABYLON.StandardMaterial("");
+    matPBR.metallic = 0.2;
+    matPBR.roughness = 0.23;
+    for (let i = -3; i <= 3; i++) {
+      for (let j = -3; j <= 3; j++) {
+        const b = BABYLON.MeshBuilder.CreateBox("box", { size: 0.5 });
+        b.position.set(i, (i + j - 1) % 2 === 0 ? 0.25 : 0, j);
+        b.material = (i + j - 1) % 2 === 0 ? matStd : matPBR;
+      }
+    }
+
+    const light = this.setupLight(true) as any;
+    const scaling = light.range ? light.range * 2 : 0;
+
+    if (1) {
+      const debugOverlay = BABYLON.MeshBuilder.CreateSphere("dbov", {
+        diameter: 1,
+      });
+      debugOverlay.position.copyFrom(light.position);
+      debugOverlay.scaling.setAll(scaling);
+      debugOverlay.visibility = 0.3;
+    }
+
+    this.scene.createDefaultEnvironment();
+    this.scene.environmentIntensity = 0.14; // (debugNode as BABYLON.Scene)
+
+    const standardPipeline = new BABYLON.PostProcessRenderPipeline(
+      this.scene.getEngine(),
+      "standardPipeline",
+    );
+
+    DeferredPointLight.TOTAL_LIGHTS_ALLOWED = 1024 * 50;
+    DeferredPointLight.enable(
+      this.scene,
+      BABYLON.Effect.ShadersStore,
+      null,
+      null,
+      false,
+    );
+
+    const re = new BABYLON.PostProcessRenderEffect(
+      this.scene.getEngine(),
+      "e1",
+      () => DeferredPointLight.postProcess,
+    );
+    standardPipeline.addEffect(re);
+
+    this.scene.postProcessRenderPipelineManager.addPipeline(standardPipeline);
+    this.scene.postProcessRenderPipelineManager.attachCamerasToRenderPipeline(
+      "standardPipeline",
+      [this.camera, camera2],
+    );
+  }
+
   multiCubeDemo() {
     this.camera.dispose();
     this.camera = new BABYLON.ArcRotateCamera(
@@ -166,6 +262,9 @@ class App {
       case 2:
         this.multiCubeDemo();
         break;
+      case 3:
+        this.multiViewPortDemo();
+        break;
     }
 
     return scene;
@@ -179,14 +278,16 @@ class App {
 
     DeferredPointLight.reset();
     const scene = this.createScene(engine, canvas, demo);
-    DeferredPointLight.TOTAL_LIGHTS_ALLOWED = 1024 * 50;
-    DeferredPointLight.enable(
-      scene,
-      BABYLON.Effect.ShadersStore,
-      scene.activeCamera,
-      null,
-      false,
-    );
+    if (demo !== 3) {
+      DeferredPointLight.TOTAL_LIGHTS_ALLOWED = 1024 * 50;
+      DeferredPointLight.enable(
+        scene,
+        BABYLON.Effect.ShadersStore,
+        scene.activeCamera,
+        null,
+        false,
+      );
+    }
     (window as any).deferredPointLight = DeferredPointLight;
     (window as any).scene = scene;
 
@@ -214,4 +315,8 @@ document.getElementById("demo-track")?.addEventListener("click", () => {
 document.getElementById("demo-pbr")?.addEventListener("click", () => {
   app.dispose();
   app = new App(2);
+});
+document.getElementById("demo-mvp")?.addEventListener("click", () => {
+  app.dispose();
+  app = new App(3);
 });

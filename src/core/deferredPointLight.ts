@@ -25,9 +25,40 @@ type DeferredPointLightParams = {
 };
 
 class DeferredPointLight extends AbstractDeferredLight {
-  color = new Color3(0, 1, 1);
-  position = new Vector3(1, 0, 0);
-  intensity = 0.05;
+  private _color = new Color3(0, 1, 1);
+  get color() {
+    return this._color;
+  }
+  set color(arg: Color3) {
+    this._color = arg;
+    DeferredPointLight.update();
+  }
+
+  get position() {
+    return this._position;
+  }
+  set position(arg: Vector3) {
+    this._position = arg;
+    DeferredPointLight.update();
+  }
+
+  get range() {
+    return this._range;
+  }
+  set range(arg: number) {
+    this._range = arg;
+    DeferredPointLight.update();
+  }
+
+  private _intensity = 0.05;
+  get intensity() {
+    return this._intensity;
+  }
+  set intensity(arg: number) {
+    this._intensity = arg;
+    DeferredPointLight.update();
+  }
+
   static MAX_TEXTURE_SIZE: number;
 
   override clone() {
@@ -88,7 +119,16 @@ class DeferredPointLight extends AbstractDeferredLight {
       8,
     );
     const pixelCapacity = width * height;
-    const padding = DeferredPointLight.getPadding(buffer.length, pixelCapacity);
+    const paddingLength = DeferredPointLight.getPaddingLength(
+      buffer.length,
+      pixelCapacity,
+    );
+
+    if (this.previousPadding?.length !== paddingLength) {
+      this.previousPadding = new Array(paddingLength).fill(0);
+    }
+
+    const padding = this.previousPadding;
 
     return new Float32Array(buffer.concat(padding));
   }
@@ -232,23 +272,35 @@ class DeferredPointLight extends AbstractDeferredLight {
       };
     }
 
-    postProcess.onApply = (e) => {
-      const attachedCamera = postProcess.getCamera();
-      if (!attachedCamera) return;
-
+    const updateCamera = (attachedCamera: Camera) => {
       const transformMatrix = attachedCamera.getTransformationMatrix();
       const frustum = Frustum.GetPlanes(transformMatrix);
+
+      const e = postProcess.getEffect();
 
       this.updateActive(frustum);
 
       const cameraPos = attachedCamera.globalPosition;
+
+      e.setFloat3("camera_position", cameraPos.x, cameraPos.y, cameraPos.z);
+    };
+
+    let cam = camera;
+    postProcess.onActivateObservable.add((c) => {
+      cam = c;
+    });
+
+    postProcess.onApply = (e) => {
+      if (!cam) return;
+      updateCamera(cam);
+
       const allLights = this.getAll({
         active: true,
         visible: true,
         capLength: true,
       }) as DeferredPointLight[];
 
-      if (!this.isPerformanceMode) {
+      if (!this.isPerformanceMode && this.needsUpdate) {
         pointLightsDataTexture.update(this.getDataBuffer(allLights));
       }
 
@@ -274,7 +326,6 @@ class DeferredPointLight extends AbstractDeferredLight {
       }
 
       e.setInt("lights_len", allLights.length);
-      e.setFloat3("camera_position", cameraPos.x, cameraPos.y, cameraPos.z);
 
       e.setFloat2(
         "screenSize",
