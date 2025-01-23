@@ -1,9 +1,7 @@
-import type { Camera } from "@babylonjs/core/Cameras/camera";
 import type { Plane } from "@babylonjs/core/Maths/math.plane";
 import type { PostProcess } from "@babylonjs/core/PostProcesses/postProcess";
 import type { DeepImmutable } from "@babylonjs/core/types";
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
-import { Engine } from "@babylonjs/core/Engines/engine";
 
 class AbstractDeferredLight {
   uniqueId: number;
@@ -28,20 +26,6 @@ class AbstractDeferredLight {
 
   constructor() {
     this.uniqueId = AbstractDeferredLight.getUniqueId();
-  }
-
-  /**
-   * ==== ==== ==== ====
-   * UTILS
-   * ==== ==== ==== ====
-   */
-  protected static getPaddingLength(
-    bufferLength: number,
-    pixelCapacity: number,
-  ) {
-    const valueCapacity = pixelCapacity * 4;
-    const l = valueCapacity - bufferLength;
-    return l;
   }
 
   /**
@@ -114,7 +98,7 @@ class AbstractDeferredLight {
   }
 
   static updateActive(frustumPlanes: Array<DeepImmutable<Plane>>) {
-    if (!this.isFrustumCullingEnabled) return;
+    if (!this.isFrustumCullingEnabled || !this.needsUpdate) return;
     this.activeLights = [];
 
     for (const key in this.lights) {
@@ -203,7 +187,7 @@ class AbstractDeferredLight {
     this.postProcess = null;
   }
 
-  static previousPadding: number[] | null = null;
+  static lightsArrayBuffer: Float32Array = new Float32Array([]);
   static reset() {
     if (this.postProcess) this.postProcess.dispose();
     this.postProcess = null;
@@ -211,7 +195,7 @@ class AbstractDeferredLight {
     this.activeLights = [];
     this.needsUpdate = false;
     this.lights = {};
-    this.previousPadding = null;
+    this.lightsArrayBuffer = new Float32Array([]);
     this.isPerformanceMode = false;
     this.TOTAL_LIGHTS_ALLOWED = 1024;
     this.TOTAL_PERFORMANCE_LIGHTS_ALLOWED = 128;

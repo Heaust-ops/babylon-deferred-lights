@@ -104,34 +104,21 @@ class DeferredPointLight extends AbstractDeferredLight {
     return [this.color.r, this.color.g, this.color.b, this.intensity];
   }
 
-  private static getDataBuffer(lights: DeferredPointLight[]) {
-    const buffer = [];
+  private static updateDataBuffer(lights: DeferredPointLight[]) {
+    for (let i = 0; i < lights.length; i++) {
+      const ci = lights[i].getColorIntensityArray();
+      const p = lights[i].getPositionArray();
 
-    for (const l of lights) {
-      const ci = l.getColorIntensityArray();
-      const p = l.getPositionArray();
+      this.lightsArrayBuffer[i * 8 + 0] = ci[0];
+      this.lightsArrayBuffer[i * 8 + 1] = ci[1];
+      this.lightsArrayBuffer[i * 8 + 2] = ci[2];
+      this.lightsArrayBuffer[i * 8 + 3] = ci[3];
 
-      buffer.push(...ci, ...p);
+      this.lightsArrayBuffer[i * 8 + 4] = p[0];
+      this.lightsArrayBuffer[i * 8 + 5] = p[1];
+      this.lightsArrayBuffer[i * 8 + 6] = p[2];
+      this.lightsArrayBuffer[i * 8 + 7] = p[3];
     }
-
-    const { width, height } = DeferredPointLight.getTextureDimensionsByUnits(
-      this.MAX_TEXTURE_SIZE,
-      this.TOTAL_LIGHTS_ALLOWED,
-      8,
-    );
-    const pixelCapacity = width * height;
-    const paddingLength = DeferredPointLight.getPaddingLength(
-      buffer.length,
-      pixelCapacity,
-    );
-
-    if (this.previousPadding?.length !== paddingLength) {
-      this.previousPadding = new Array(paddingLength).fill(0);
-    }
-
-    const padding = this.previousPadding;
-
-    return new Float32Array(buffer.concat(padding));
   }
 
   /**
@@ -209,8 +196,12 @@ class DeferredPointLight extends AbstractDeferredLight {
       8,
     );
 
+    this.lightsArrayBuffer = new Float32Array(
+      new Array(width * height * 4).fill(0),
+    );
+
     const pointLightsDataTexture = RawTexture.CreateRGBATexture(
-      this.getDataBuffer([]),
+      this.lightsArrayBuffer,
       width,
       height,
       scene,
@@ -303,7 +294,8 @@ class DeferredPointLight extends AbstractDeferredLight {
       }) as DeferredPointLight[];
 
       if (!this.isPerformanceMode && this.needsUpdate) {
-        pointLightsDataTexture.update(this.getDataBuffer(allLights));
+        this.updateDataBuffer(allLights);
+        pointLightsDataTexture.update(this.lightsArrayBuffer);
         this.needsUpdate = false;
       }
 
