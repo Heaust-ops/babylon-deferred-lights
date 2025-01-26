@@ -27,6 +27,7 @@ type DeferredPointLightParams = {
 
 class DeferredPointLight extends AbstractDeferredLight {
   private _color = new Color3(0, 1, 1);
+
   get color() {
     return this._color;
   }
@@ -92,6 +93,38 @@ class DeferredPointLight extends AbstractDeferredLight {
     return this.add(newLight);
   }
 
+  static get TOTAL_LIGHTS_ALLOWED() {
+    return this._TOTAL_LIGHTS_ALLOWED;
+  }
+  static set TOTAL_LIGHTS_ALLOWED(arg: number) {
+    this._TOTAL_LIGHTS_ALLOWED = arg;
+
+    if (!this.pointLightsDataTexture) return;
+
+    const scene = this.pointLightsDataTexture.getScene();
+
+    const { width, height } = DeferredPointLight.getTextureDimensionsByUnits(
+      this.MAX_TEXTURE_SIZE,
+      this._TOTAL_LIGHTS_ALLOWED,
+      8,
+    );
+
+    this.lightsArrayBuffer = new Float32Array(
+      new Array(width * height * 4).fill(0),
+    );
+
+    this.pointLightsDataTexture = RawTexture.CreateRGBATexture(
+      this.lightsArrayBuffer,
+      width,
+      height,
+      scene,
+      false,
+      false,
+      Texture.NEAREST_SAMPLINGMODE,
+      Engine.TEXTURETYPE_FLOAT,
+    );
+  }
+
   /**
    * DATA BUFFERS
    */
@@ -121,10 +154,11 @@ class DeferredPointLight extends AbstractDeferredLight {
     }
   }
 
+  private static pointLightsDataTexture: RawTexture;
+
   /**
    * ENABLE
    */
-
   static enable(
     scene: Scene,
     shadersStore: { [key: string]: string },
@@ -200,7 +234,7 @@ class DeferredPointLight extends AbstractDeferredLight {
       new Array(width * height * 4).fill(0),
     );
 
-    const pointLightsDataTexture = RawTexture.CreateRGBATexture(
+    this.pointLightsDataTexture = RawTexture.CreateRGBATexture(
       this.lightsArrayBuffer,
       width,
       height,
@@ -210,8 +244,6 @@ class DeferredPointLight extends AbstractDeferredLight {
       Texture.NEAREST_SAMPLINGMODE,
       Engine.TEXTURETYPE_FLOAT,
     );
-
-    (window as any).pl = pointLightsDataTexture;
 
     let defines = "";
 
@@ -295,7 +327,7 @@ class DeferredPointLight extends AbstractDeferredLight {
 
       if (!this.isPerformanceMode && this.needsUpdate) {
         this.updateDataBuffer(allLights);
-        pointLightsDataTexture.update(this.lightsArrayBuffer);
+        this.pointLightsDataTexture.update(this.lightsArrayBuffer);
         this.needsUpdate = false;
       }
 
@@ -317,7 +349,7 @@ class DeferredPointLight extends AbstractDeferredLight {
           allLights.map((l) => l.getColorIntensityArray()).flatMap((a) => a),
         );
       } else {
-        e.setTexture("point_lights_data", pointLightsDataTexture);
+        e.setTexture("point_lights_data", this.pointLightsDataTexture);
       }
 
       e.setInt("lights_len", allLights.length);

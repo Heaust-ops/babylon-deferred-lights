@@ -129,7 +129,25 @@ You can decide the max cap for lights in normal and performance mode _(don't go 
 
 The cap is evaluated after frustum culling, so it's the maximum cap of simultaneous lights on screen.
 
-You must do this before you enable the lighting system.
+For non-performance mode, higher total lights means a larger texture.
+
+Large textures take more ram, vram and time to update. So try to keep total lights allowed fairly tight.
+
+(You can always change it on the fly)
+
+In case you do have 10s of thousands of lights, and are bogged down by the texture update per frame.
+
+```javascript
+DeferredPointLight.autoUpdate = false;
+```
+
+If your lights are mostly static, you can disable auto-update and boost performance by not updating the texture.
+
+```javascript
+DeferredPointLight.update();
+```
+
+You do have to manually call update if there's any change to your lights though if you do that.
 
 ```javascript
 DeferredPointLight.disable();
@@ -138,3 +156,5 @@ DeferredPointLight.disable();
 You can get rid of the entire system once you no longer need it.
 
 Have fun :)
+
+Credits: [Heaust](https://forum.babylonjs.com/u/heaust-ops/summary) & [Joe_Kerr](https://forum.babylonjs.com/u/joe_kerr/summary)

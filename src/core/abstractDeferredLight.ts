@@ -64,8 +64,15 @@ class AbstractDeferredLight {
 
   protected static isPerformanceMode = false;
 
-  static TOTAL_LIGHTS_ALLOWED = 1024;
   static TOTAL_PERFORMANCE_LIGHTS_ALLOWED = 128;
+  protected static _TOTAL_LIGHTS_ALLOWED = 1024;
+
+  static get TOTAL_LIGHTS_ALLOWED() {
+    return this._TOTAL_LIGHTS_ALLOWED;
+  }
+  static set TOTAL_LIGHTS_ALLOWED(arg: number) {
+    this._TOTAL_LIGHTS_ALLOWED = arg;
+  }
 
   /**
    * LIGHT SPECIFIC STUFF
@@ -141,7 +148,7 @@ class AbstractDeferredLight {
 
     const totalAllowed = this.isPerformanceMode
       ? this.TOTAL_PERFORMANCE_LIGHTS_ALLOWED
-      : this.TOTAL_LIGHTS_ALLOWED;
+      : this._TOTAL_LIGHTS_ALLOWED;
 
     for (let i = 0; i < allLights.length; i++) {
       const light = allLights[i];
@@ -197,7 +204,7 @@ class AbstractDeferredLight {
     this.lights = {};
     this.lightsArrayBuffer = new Float32Array([]);
     this.isPerformanceMode = false;
-    this.TOTAL_LIGHTS_ALLOWED = 1024;
+    this._TOTAL_LIGHTS_ALLOWED = 1024;
     this.TOTAL_PERFORMANCE_LIGHTS_ALLOWED = 128;
     this.autoUpdate = true;
   }
