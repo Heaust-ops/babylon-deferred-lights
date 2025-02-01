@@ -1,9 +1,9 @@
 import * as BABYLON from "@babylonjs/core";
-import { DeferredPointLight } from "../src";
+import { DeferredPointLight, DeferredRectAreaLight } from "../src";
 
 const randomize = (light: any) => {
   const r = Math.random;
-  const scale = 75;
+  const scale = 50;
   light.position = new BABYLON.Vector3(
     (r() - 0.5) * 2 * scale,
     (r() - 0.5) * 2 * scale,
@@ -49,17 +49,7 @@ class App {
   }
 
   multiViewPortDemo() {
-    this.camera.dispose();
-
-    this.camera = new BABYLON.ArcRotateCamera(
-      "camera1",
-      Math.PI / 2,
-      Math.PI / 2,
-      10,
-      new BABYLON.Vector3(-2, 2, 0),
-      this.scene,
-    );
-    this.camera.attachControl(this.canvas, true);
+    this.makeArcRotateCamera();
 
     const camera2 = new BABYLON.ArcRotateCamera(
       "camera2",
@@ -144,7 +134,7 @@ class App {
     );
   }
 
-  multiCubeDemo() {
+  private makeArcRotateCamera() {
     this.camera.dispose();
     this.camera = new BABYLON.ArcRotateCamera(
       "camera",
@@ -156,6 +146,10 @@ class App {
     );
     (this.camera as BABYLON.ArcRotateCamera).setTarget(BABYLON.Vector3.Zero());
     this.camera.attachControl(this.canvas, true);
+  }
+
+  multiCubeDemo() {
+    this.makeArcRotateCamera();
     const matPBR = new BABYLON.PBRMaterial("");
 
     const matStd = new BABYLON.StandardMaterial("");
@@ -205,17 +199,22 @@ class App {
     }
   }
 
-  thousandSunsDemo(numLights = 100, numSpheres = 10_000) {
+  thousandSunsDemo(numLights = 500, numSpheres = 10_000) {
     this.makeRandomSpheres(numSpheres);
     for (let i = 0; i < numLights; i++) {
       const id = DeferredPointLight.add();
       randomize(DeferredPointLight.getById(id)!);
     }
 
-    window.addEventListener("keypress", (e) => {
+    if ((window as any).sphereListener) {
+      window.removeEventListener("keypress", (window as any).sphereListener);
+    }
+    (window as any).sphereListener = (e: KeyboardEvent) => {
       if (e.key !== "r") return;
       DeferredPointLight.getAll().forEach((l) => randomize(l));
-    });
+    }
+
+    window.addEventListener("keypress", (window as any).sphereListener);
   }
 
   followCubeDemo() {
@@ -234,6 +233,57 @@ class App {
       pl.position = box.position.clone();
       pl.position.y += 1.001;
     });
+  }
+
+  rectAreaLightDemo() {
+    const scene = this.scene;
+
+    this.makeArcRotateCamera();
+    (this.camera as BABYLON.ArcRotateCamera).beta = Math.PI / 3;
+    (this.camera as BABYLON.ArcRotateCamera).radius = 100;
+
+    DeferredRectAreaLight.TOTAL_LIGHTS_ALLOWED = 1024 * 50;
+    const pp = DeferredRectAreaLight.enable(
+      scene,
+      BABYLON.Effect.ShadersStore,
+      this.camera,
+      null,
+      false,
+      1,
+      false
+    );
+
+
+    const light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+    light.intensity = 0.001;
+
+    (window as any).dral = DeferredRectAreaLight;
+
+    const gr = () => {
+      const r = (Math.random() - 0.5) * 100;
+      return r;
+    }
+
+    // for (let i = 0; i < 20; i++) {
+    const rectAreaLight = new DeferredRectAreaLight({
+      position: new BABYLON.Vector3(gr(), Math.random() * 2 + 1, gr()),
+      isTwoSided: true,
+      intensity: Math.random() * 0.3 + 0.5,
+      color: new BABYLON.Color3(...(new BABYLON.Vector3(...BABYLON.Color3.Random().asArray())).normalize().asArray()),
+      scaling: new BABYLON.Vector2(4, 4)
+    });
+    rectAreaLight.setRotation(0, 0, 0);
+
+    DeferredRectAreaLight.add(rectAreaLight);
+    // }
+
+
+    const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 100, height: 100 }, scene);
+    ground.position = new BABYLON.Vector3(0, 0, 0);
+
+    const groundMat = new BABYLON.StandardMaterial("groundMat");
+    groundMat.backFaceCulling = false;
+    ground.material = groundMat;
   }
 
   createScene(engine: BABYLON.Engine, canvas: HTMLCanvasElement, demo: number) {
@@ -265,18 +315,39 @@ class App {
       case 3:
         this.multiViewPortDemo();
         break;
+      case 4:
+        this.rectAreaLightDemo();
+        break;
     }
+
+    const fpsel = document.getElementById("fps")!;
+    const avgArr = new Array(60).fill(60);
+
+    const refreshTime = 1e3; // ms
+
+    let prevTime = Date.now();
+    this.scene.onBeforeRenderObservable.add(() => {
+      avgArr.shift();
+      avgArr.push(this.engine.getFps());
+
+      const now = Date.now();
+      if (now - prevTime < refreshTime) return;
+      prevTime = now;
+      fpsel.innerHTML = `fps: ${Math.floor(avgArr.reduce((a, b) => a + b) / avgArr.length)}`
+    })
 
     return scene;
   }
 
   constructor(demo: number) {
-    const canvas = document.getElementById("bblon") as HTMLCanvasElement;
+    const canvas = document.getElementById("bblon")! as unknown as HTMLCanvasElement;
     this.canvas = canvas;
 
     const engine = new BABYLON.Engine(canvas, true);
 
     DeferredPointLight.reset();
+    DeferredRectAreaLight.reset();
+
     const scene = this.createScene(engine, canvas, demo);
     if (demo !== 3) {
       DeferredPointLight.TOTAL_LIGHTS_ALLOWED = 1024 * 50;
@@ -319,4 +390,8 @@ document.getElementById("demo-pbr")?.addEventListener("click", () => {
 document.getElementById("demo-mvp")?.addEventListener("click", () => {
   app.dispose();
   app = new App(3);
+});
+document.getElementById("demo-rad")?.addEventListener("click", () => {
+  app.dispose();
+  app = new App(4);
 });
