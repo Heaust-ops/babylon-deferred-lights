@@ -239,8 +239,10 @@ class App {
     const scene = this.scene;
 
     this.makeArcRotateCamera();
+    const playFieldSize = 50;
+
     (this.camera as BABYLON.ArcRotateCamera).beta = Math.PI / 3;
-    (this.camera as BABYLON.ArcRotateCamera).radius = 100;
+    (this.camera as BABYLON.ArcRotateCamera).radius = playFieldSize;
 
     DeferredRectAreaLight.TOTAL_LIGHTS_ALLOWED = 1024 * 50;
     const pp = DeferredRectAreaLight.enable(
@@ -250,7 +252,7 @@ class App {
       null,
       false,
       1,
-      false
+      true
     );
 
 
@@ -260,29 +262,40 @@ class App {
     (window as any).dral = DeferredRectAreaLight;
 
     const gr = () => {
-      const r = (Math.random() - 0.5) * 100;
+      const r = (Math.random() - 0.5) * playFieldSize;
       return r;
     }
 
-    // for (let i = 0; i < 20; i++) {
-    const rectAreaLight = new DeferredRectAreaLight({
-      position: new BABYLON.Vector3(gr(), Math.random() * 2 + 1, gr()),
-      isTwoSided: true,
-      intensity: Math.random() * 0.3 + 0.5,
-      color: new BABYLON.Color3(...(new BABYLON.Vector3(...BABYLON.Color3.Random().asArray())).normalize().asArray()),
-      scaling: new BABYLON.Vector2(4, 4)
-    });
-    rectAreaLight.setRotation(0, 0, 0);
+    const ar = () => {
+      return Math.random() * Math.PI / 2;
+    }
 
-    DeferredRectAreaLight.add(rectAreaLight);
-    // }
+    for (let i = 0; i < playFieldSize / 2; i++) {
+      const rectAreaLight = new DeferredRectAreaLight({
+        position: new BABYLON.Vector3(gr(), Math.random() * 2 + 1, gr()),
+        isTwoSided: true,
+        intensity: Math.random() * 0.3 + 0.5,
+        color: new BABYLON.Color3(...(new BABYLON.Vector3(...BABYLON.Color3.Random().asArray())).normalize().asArray()),
+        scaling: new BABYLON.Vector2(1 + ar(), 1 + ar())
+      });
 
+      rectAreaLight.setRotation(ar(), ar(), ar());
+      scene.onBeforeRenderObservable.add(() => {
+        rectAreaLight.rotateX(Math.random() * 0.1);
+        rectAreaLight.rotateY(Math.random() * 0.1);
+        rectAreaLight.rotateZ(Math.random() * 0.1);
+      });
 
-    const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 100, height: 100 }, scene);
+      DeferredRectAreaLight.add(rectAreaLight);
+    }
+
+    const ground = BABYLON.MeshBuilder.CreateGround("ground", { width: playFieldSize, height: playFieldSize }, scene);
     ground.position = new BABYLON.Vector3(0, 0, 0);
 
-    const groundMat = new BABYLON.StandardMaterial("groundMat");
+    const groundMat = new BABYLON.PBRMaterial("groundMat");
     groundMat.backFaceCulling = false;
+    groundMat.roughness = 0.2;
+    groundMat.metallic = 0.5;
     ground.material = groundMat;
   }
 

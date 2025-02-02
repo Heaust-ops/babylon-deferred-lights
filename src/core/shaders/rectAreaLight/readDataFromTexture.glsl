@@ -1,25 +1,24 @@
-
-float pixelStart = float(i) * 2.;
+float pixelStart = float(i) * 4.;
 
 vec2 fullPixelStep = vec2(1. / POINTS_DATA_TEXTURE_WIDTH, 1. / POINTS_DATA_TEXTURE_HEIGHT);
 
 // pixel start
-float startX0 = floor(mod(pixelStart,  POINTS_DATA_TEXTURE_WIDTH));
+float startX0 = floor(mod(pixelStart, POINTS_DATA_TEXTURE_WIDTH));
 float startY0 = floor(pixelStart / POINTS_DATA_TEXTURE_WIDTH);
 
 // the next pixel
-pixelStart += 1.;
-float startX1 = floor(mod(pixelStart,  POINTS_DATA_TEXTURE_WIDTH));
+pixelStart += 1. ;
+float startX1 = floor(mod(pixelStart, POINTS_DATA_TEXTURE_WIDTH));
 float startY1 = floor(pixelStart / POINTS_DATA_TEXTURE_WIDTH);
 
 // the next pixel
-pixelStart += 1.;
-float startX2 = floor(mod(pixelStart,  POINTS_DATA_TEXTURE_WIDTH));
+pixelStart += 1. ;
+float startX2 = floor(mod(pixelStart, POINTS_DATA_TEXTURE_WIDTH));
 float startY2 = floor(pixelStart / POINTS_DATA_TEXTURE_WIDTH);
 
 // the next pixel
-pixelStart += 1.;
-float startX3 = floor(mod(pixelStart,  POINTS_DATA_TEXTURE_WIDTH));
+pixelStart += 1. ;
+float startX3 = floor(mod(pixelStart, POINTS_DATA_TEXTURE_WIDTH));
 float startY3 = floor(pixelStart / POINTS_DATA_TEXTURE_WIDTH);
 
 vec2 ciCoords = vec2(startX0, startY0) * fullPixelStep;

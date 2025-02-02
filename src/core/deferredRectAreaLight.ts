@@ -176,7 +176,8 @@ class DeferredRectAreaLight extends AbstractDeferredLight {
     for (let i = 0; i < lights.length; i++) {
       const ci = lights[i].getColorIntensityArray();
       const p = lights[i].getPositionArray();
-      const q = lights[i].rotationQuaternion.asArray();
+      const q = lights[i].rotationQuaternion;
+      const sc = lights[i].scaling;
 
       this.lightsArrayBuffer[i * 16 + 0] = ci[0];
       this.lightsArrayBuffer[i * 16 + 1] = ci[1];
@@ -188,13 +189,13 @@ class DeferredRectAreaLight extends AbstractDeferredLight {
       this.lightsArrayBuffer[i * 16 + 6] = p[2];
       this.lightsArrayBuffer[i * 16 + 7] = p[3];
 
-      this.lightsArrayBuffer[i * 16 + 8] = q[0];
-      this.lightsArrayBuffer[i * 16 + 9] = q[1];
-      this.lightsArrayBuffer[i * 16 + 10] = q[2];
-      this.lightsArrayBuffer[i * 16 + 11] = q[3];
+      this.lightsArrayBuffer[i * 16 + 8] = q.x;
+      this.lightsArrayBuffer[i * 16 + 9] = q.y;
+      this.lightsArrayBuffer[i * 16 + 10] = q.z;
+      this.lightsArrayBuffer[i * 16 + 11] = q.w;
 
-      this.lightsArrayBuffer[i * 16 + 12] = lights[i].scaling.x;
-      this.lightsArrayBuffer[i * 16 + 13] = lights[i].scaling.y;
+      this.lightsArrayBuffer[i * 16 + 12] = sc.x;
+      this.lightsArrayBuffer[i * 16 + 13] = sc.y;
       this.lightsArrayBuffer[i * 16 + 14] = +lights[i].isTwoSided;
       this.lightsArrayBuffer[i * 16 + 15] = 0;
     }
@@ -323,7 +324,6 @@ class DeferredRectAreaLight extends AbstractDeferredLight {
 #define TOTAL_LIGHTS_ALLOWED ${this.TOTAL_LIGHTS_ALLOWED}.0
 #define POINTS_DATA_TEXTURE_WIDTH ${width}.0
 #define POINTS_DATA_TEXTURE_HEIGHT ${height}.0
-#define RECIPROCAL_PI 0.318309886
 `;
 
     if (this.isPerformanceMode)
@@ -349,7 +349,7 @@ class DeferredRectAreaLight extends AbstractDeferredLight {
       "deferredRectAreaLights",
       ["lights_len", "camera_position", "screenSize", "view"].concat(
         this.isPerformanceMode
-          ? ["lights_position_range", "lights_color_intensity"]
+          ? ["lights_position_range", "lights_color_intensity", "lights_quaternion", "lights_scaling_etal"]
           : [],
       ),
       ["nBuffer", "pBuffer", "rBuffer", "ltc_1", "ltc_2"].concat(
@@ -427,6 +427,14 @@ class DeferredRectAreaLight extends AbstractDeferredLight {
         e.setFloatArray4(
           "lights_color_intensity",
           allLights.map((l) => l.getColorIntensityArray()).flatMap((a) => a),
+        );
+        e.setFloatArray4(
+          "lights_quaternion",
+          allLights.map((l) => l.rotationQuaternion.asArray()).flatMap((a) => a),
+        );
+        e.setFloatArray3(
+          "lights_scaling_etal",
+          allLights.map((l) => [...l.scaling.asArray(), +l.isTwoSided]).flatMap((a) => a),
         );
       } else {
         e.setTexture("point_lights_data", lightsDataTexture);
