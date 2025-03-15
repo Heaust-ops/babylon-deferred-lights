@@ -4,9 +4,13 @@ A deferred lighting solution for [babylonjs](https://www.babylonjs.com/).
 
 What's deferred lighting? In a nutshell, 1000s of lights w/ no lag. _(You can read more [here](https://learnopengl.com/Advanced-Lighting/Deferred-Shading))_
 
-npm: https://www.npmjs.com/package/babylon-deferred-lighting
+npm: https://www.npmjs.com/package/babylon-deferred-lights
 
 demo: https://babylon-deferred-lighting.netlify.app/
+
+Babylonjs forum thread: https://forum.babylonjs.com/t/very-very-much-want-to-add-deferred-rendering-global-illumination/29611
+
+PG demo: https://playground.babylonjs.com/#WZSKV4#3
 
 Right now this only supports point lights, this will change.
 
@@ -154,6 +158,34 @@ DeferredPointLight.disable();
 ```
 
 You can get rid of the entire system once you no longer need it.
+
+```javascript
+DeferredRectAreaLight.TOTAL_LIGHTS_ALLOWED = 1024 * 5;
+
+const pp = DeferredRectAreaLight.enable(
+  scene,
+  BABYLON.Effect.ShadersStore,
+  camera,
+  null, // Geometry Buffer Renderer
+  false, // Performance Mode
+  1, // Post Process Options
+  true, // Use Clipless Approximation
+);
+
+const rectAreaLight = new DeferredRectAreaLight({
+  position: new BABYLON.Vector3(1, 2, 3),
+  isTwoSided: true,
+  intensity: 0.8,
+  color: new BABYLON.Color3(0.1, 0.2, 0.3),
+  scaling: new BABYLON.Vector2(2, 1),
+});
+
+rectAreaLight.setRotation(1, 2, 3);
+rectAreaLight.rotateX(Math.PI / 2);
+DeferredRectAreaLight.add(rectAreaLight);
+```
+
+There's also Rect Area Lights, which function mostly the same way as the point lights examples
 
 Have fun :)
 

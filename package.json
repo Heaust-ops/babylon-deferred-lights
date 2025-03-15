@@ -1,6 +1,6 @@
 {
   "name": "babylon-deferred-lights",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A deferred lighting solution for babylonjs",
   "author": "heaust-ops",
   "license": "MIT",
